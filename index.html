@@ -1,0 +1,128 @@
+<html>
+<body>
+<h1>Break out</h1>
+<canvas width=1000 height=400></canvas>
+</body>
+<script>
+var cx = document.querySelector("canvas").getContext("2d");
+
+var lastTime = null;
+var failure = false;
+var palleteY = 380;
+var radius = 20;
+var arrowCodes = {37: "left", 39: "right"};
+var pressed = trackKeys(arrowCodes);
+
+var minX = 0;
+var palleteLength = 100;
+var maxX = 1000 - palleteLength;
+
+var palleteX = 1;
+var ballX = 100, ballY = 100;
+var ballSpeedX =  1 - 2 * Math.random(1), ballSpeedY = 2;
+
+
+function drawBackground() {
+    cx.strokeStyle = "blue";
+    cx.lineWidth = 5;
+    cx.strokeRect(0, 0, 1000, 400);
+}
+
+
+function drawPalette(x) {
+    cx.beginPath();
+    cx.fillStyle = 'magenta';
+    cx.fillRect(0 + x, palleteY, 100, 18);
+    cx.closePath();
+}
+
+function drawBall(centerX, centerY) {
+    cx.beginPath();
+    cx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
+    cx.fillStyle = 'green';
+    cx.fill();
+    cx.lineWidth = 2;
+    cx.strokeStyle = '#003300';
+    cx.stroke();
+    cx.closePath();
+}
+
+
+function trackKeys(codes) {
+  var pressed = Object.create(null);
+  function handler(event) {
+    if (codes.hasOwnProperty(event.keyCode)) {
+      var down = event.type == "keydown";
+      pressed[codes[event.keyCode]] = down;
+      event.preventDefault();
+    }
+  }
+  addEventListener("keydown", handler);
+  addEventListener("keyup", handler);
+  return pressed;
+}
+
+
+function detectCollision() {
+    if (ballY + radius > palleteY) {
+        if (ballX - radius < palleteX + palleteLength && ballX + radius > palleteX) {
+            ballSpeedY = - ballSpeedY;
+            if (ballX > palleteX + palleteX / 2) {
+                ballSpeedX += 0.5;
+            } else {
+                ballSpeedX -= 0.5;
+            }
+        } else {
+            failure = true;
+        }
+    } else if (ballY - radius < 0) {
+        ballSpeedY = - ballSpeedY;
+    }
+    if (ballX + radius > 1000) {
+        ballSpeedX = - ballSpeedX;
+    } else if (ballX - radius < 0) {
+        ballSpeedX = - ballSpeedX;
+    }
+}
+
+
+function updateAnimation(step) {
+    cx.clearRect(0, 0, 1000, 1000);
+    drawBackground();
+
+    var change = 0;
+    if (pressed["left"]) {
+        change = -10;
+    } else if (pressed["right"]) {
+        change = 10;
+    } 
+    palleteX = palleteX + change;
+    palleteX = Math.min(palleteX, maxX);
+    palleteX = Math.max(palleteX, minX);
+    
+    ballX += ballSpeedX;
+    ballY += ballSpeedY; 
+    drawBall(ballX, ballY);
+
+    drawPalette(palleteX);
+    detectCollision()
+    if (failure) {
+        ballSpeedX = ballSpeedY = 0;
+        document.body.style.backgroundColor = 'gray';
+        alert("You've lost :(");
+    }
+}
+
+function frame(time) {
+    if (lastTime != null)
+        updateAnimation(Math.min(100, time - lastTime) / 1000);
+    lastTime = time;
+    if (!failure) {
+        requestAnimationFrame(frame);
+    }
+}
+requestAnimationFrame(frame);
+
+</script>
+
+</html>
